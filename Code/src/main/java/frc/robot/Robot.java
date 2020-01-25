@@ -27,10 +27,10 @@ public class Robot extends TimedRobot {
 
     //VARIABLES
 
-  private static final int kFrontLeftChannel = 0;
-  private static final int kRearLeftChannel = 1;
-  private static final int kFrontRightChannel = 2;
-  private static final int kRearRightChannel = 3;
+  private static final int kFrontLeftChannel = 1;
+  private static final int kRearLeftChannel = 0;
+  private static final int kFrontRightChannel = 3;
+  private static final int kRearRightChannel = 2;
 
 
   private static final String kCenterAuto = "Center";
@@ -84,8 +84,8 @@ public class Robot extends TimedRobot {
     m_robotDrive.setSafetyEnabled(false);
     m_robotDrive.setExpiration(0.1);
 
-    m_rearRight.setInverted(true);
-    m_frontRight.setInverted(true);
+    //m_rearRight.setInverted(true);
+    //m_frontRight.setInverted(true);
 
 
     //Joystick Init
@@ -148,7 +148,12 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    m_robotDrive.arcadeDrive(driveStick.getY(), driveStick.getX());
+
+    double xval = driveStick.getX();
+    double yval = driveStick.getY();
+    double twistval = 0.6*driveStick.getTwist();
+
+    m_robotDrive.arcadeDrive(yval, twistval);
 
   }
 
