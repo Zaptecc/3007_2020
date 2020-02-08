@@ -10,10 +10,10 @@ package frc.robot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.smartdashboard.*;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -25,12 +25,31 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class Robot extends TimedRobot {
 
 
-    //VARIABLES
+                //VARIABLES
 
+    //CIMS
   private static final int kFrontLeftChannel = 1;
   private static final int kRearLeftChannel = 0;
   private static final int kFrontRightChannel = 3;
   private static final int kRearRightChannel = 2;
+
+  private static final int kWinchChannel = 6;
+
+    //GEARMOTORS
+  private static final int kWOFSpinner = 9;
+
+  private static final int kBallTube1 = 6;
+  private static final int kBallTube2 = 6;
+
+  private static final int kBallIntake1 = 6;
+  private static final int kBallIntake2 = 6;
+
+    //BRUSHLESS
+  private static final int kBallThrower = 6;
+
+    //JOYSTICKS
+  private static final int kDriveStick = 0;
+  private static final int kControlStick = 0; //1
 
 
   private static final String kCenterAuto = "Center";
@@ -64,14 +83,14 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
 
-    //Auto Choice Init
+        //Auto Choice Init
     m_chooser.setDefaultOption("Center (Default)", kCenterAuto);
     m_chooser.addOption("Left", kLeftAuto);
     m_chooser.addOption("Right", kRightAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
 
-    //Drivetrain Init
+        //Drivetrain Init
     Spark m_frontLeft = new Spark(kFrontLeftChannel);
     Spark m_rearLeft = new Spark(kRearLeftChannel);
     SpeedControllerGroup m_left = new SpeedControllerGroup(m_frontLeft, m_rearLeft);
@@ -87,10 +106,12 @@ public class Robot extends TimedRobot {
     //m_rearRight.setInverted(true);
     //m_frontRight.setInverted(true);
 
+        //Other Motor Init
+    VictorSP WOFSpinner = new VictorSP(kWOFSpinner);
 
     //Joystick Init
-    driveStick = new Joystick(0);
-    controlStick = new Joystick(1);
+    driveStick = new Joystick(kDriveStick);
+    controlStick = new Joystick(kControlStick);
 
   }
 
@@ -150,8 +171,20 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
 
     double xval = driveStick.getX();
-    double yval = driveStick.getY();
-    double twistval = 0.6*driveStick.getTwist();
+    double yval = -0.7*driveStick.getY();
+    double twistval = 0.7*driveStick.getTwist();
+
+    if(controlStick.getRawButton(1) == true){
+
+      yval = -1*driveStick.getY();
+      twistval = 0.7*driveStick.getTwist();
+
+    }else{
+
+      yval = -0.7*driveStick.getY();
+      twistval = 0.7*driveStick.getTwist();
+
+    };
 
     m_robotDrive.arcadeDrive(yval, twistval);
 
