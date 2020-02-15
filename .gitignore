@@ -1,3 +1,6 @@
-.vscode
-.wpilib
+*.vscode
+*.wpilib
+*.bin
+*.lock
+*.jar
 .DS_Store
