@@ -11,9 +11,22 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.VictorSP;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.smartdashboard.*;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+
+import com.revrobotics.CANError;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -33,23 +46,32 @@ public class Robot extends TimedRobot {
   private static final int kFrontRightChannel = 3;
   private static final int kRearRightChannel = 2;
 
-  private static final int kWinchChannel = 6;
+  private static final int kWinch = 5;
 
     //GEARMOTORS
-  private static final int kWOFSpinner = 9;
+  private static final int kCtrlPanel = 10;
+  private static final int kGondolla = 9;
 
   private static final int kBallTube1 = 6;
-  private static final int kBallTube2 = 6;
-
-  private static final int kBallIntake1 = 6;
-  private static final int kBallIntake2 = 6;
+  private static final int kBallTube2 = 8;
 
     //BRUSHLESS
-  private static final int kBallThrower = 6;
+
+  private static final int kBallIntake1 = 35;
+  private static final int kBallIntake2 = 4;
+
+  private static final int kBallShooter = 1;
+
+    //SOLENOIDS
+  private static final int kBallStop = 3;
+  private static final int kShifter = 1;
+  private static final int kGatherLift = 0;
+  private static final int kCtrlPanelLifter = 4;
+  private static final int kClimbBrake = 2;
 
     //JOYSTICKS
   private static final int kDriveStick = 0;
-  private static final int kControlStick = 0; //1
+  private static final int kControlStick = 1;
 
 
   private static final String kCenterAuto = "Center";
@@ -64,6 +86,29 @@ public class Robot extends TimedRobot {
   private static Joystick driveStick;
   private static Joystick controlStick;
 
+  //Motors
+
+  private static CANSparkMax ballIntake1;
+  private static CANSparkMax ballIntake2;
+  private static CANSparkMax ballShooter;
+
+  private static VictorSPX winch;
+  private static VictorSPX ctrlPanel;
+  private static TalonSRX ballTube1;
+  private static TalonSRX ballTube2;
+  private static TalonSRX gondolla;
+
+  //Solenoids
+  private static Solenoid ballStop;
+  private static Solenoid shifter;
+  private static Solenoid gatherLift;
+  private static Solenoid climbBrake;
+  private static Solenoid ctrlPanelLifter;
+
+  //Pneumatics
+  private static Compressor compressor;
+
+
   public static DifferentialDrive getDrive() {
     return m_robotDrive;
   }
@@ -73,8 +118,10 @@ public class Robot extends TimedRobot {
   }
 
   public static Joystick getJoystick2() {
-    return driveStick; //controlStick;
+    return controlStick;
   }
+
+  public static Timer timer;
 
   /**
    * This function is run when the robot is first started up and should be
@@ -107,11 +154,34 @@ public class Robot extends TimedRobot {
     //m_frontRight.setInverted(true);
 
         //Other Motor Init
-    VictorSP WOFSpinner = new VictorSP(kWOFSpinner);
+    ballIntake1 = new CANSparkMax(kBallIntake1, MotorType.kBrushless);
+    ballIntake2 = new CANSparkMax(kBallIntake2, MotorType.kBrushless);
+    ballShooter = new CANSparkMax(kBallShooter, MotorType.kBrushless);
 
-    //Joystick Init
+    ctrlPanel = new VictorSPX(kCtrlPanel);
+    winch = new VictorSPX(kWinch);
+
+    ballTube1 = new TalonSRX(kBallTube1);
+    ballTube2 = new TalonSRX(kBallTube2);
+    gondolla = new TalonSRX(kGondolla);
+
+        //Solenoids
+    ballStop = new Solenoid(kBallStop);
+    climbBrake = new Solenoid(kClimbBrake);
+    ctrlPanelLifter = new Solenoid(kCtrlPanelLifter);
+    shifter = new Solenoid(kShifter);
+    gatherLift = new Solenoid(kGatherLift);
+
+        //Pneumatics
+    compressor = new Compressor();
+
+    compressor.start();
+
+        //Joystick Init
     driveStick = new Joystick(kDriveStick);
     controlStick = new Joystick(kControlStick);
+
+    timer = new Timer();
 
   }
 
@@ -143,6 +213,9 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
+
+    timer.reset();
+    timer.start();
   }
 
   /**
@@ -152,17 +225,31 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     switch (m_autoSelected) {
       case kCenterAuto:
-        // Put center auto code here
+          if (timer.get() > 2.0) {
+              m_robotDrive.arcadeDrive(0.35, 0);
+          } else {
+              m_robotDrive.arcadeDrive(0, 0);
+          }
         break;
       case kLeftAuto:
       default:
-        // Put left auto code here
+            if (timer.get() > 2.0) {
+              m_robotDrive.arcadeDrive(0.35, 0);
+          } else {
+              m_robotDrive.arcadeDrive(0, 0);
+          }
         break;
       case kRightAuto:
-        //Put right auto code here
+            if (timer.get() > 2.0) {
+              m_robotDrive.arcadeDrive(0.35, 0);
+          } else {
+              m_robotDrive.arcadeDrive(0, 0);
+          }
         break;
     }
   }
+
+
 
   /**
    * This function is called periodically during operator control.
@@ -174,19 +261,91 @@ public class Robot extends TimedRobot {
     double yval = -0.7*driveStick.getY();
     double twistval = 0.7*driveStick.getTwist();
 
-    if(controlStick.getRawButton(1) == true){
-
-      yval = -1*driveStick.getY();
-      twistval = 0.7*driveStick.getTwist();
-
-    }else{
-
-      yval = -0.7*driveStick.getY();
-      twistval = 0.7*driveStick.getTwist();
-
+    if (driveStick.getRawButton(1) == true) {
+        yval = -1*driveStick.getY();
+        twistval = 0.7*driveStick.getTwist();
+    } else {
+        yval = -0.7*driveStick.getY();
+        twistval = 0.7*driveStick.getTwist();
     };
 
     m_robotDrive.arcadeDrive(yval, twistval);
+
+    if(controlStick.getRawButton(1) == true) {
+      ballIntake1.set(controlStick.getY());
+    } else {
+      ballIntake1.set(0.0);
+    };
+
+    if(controlStick.getRawButton(2) == true) {
+      ballIntake2.set(controlStick.getY());
+    } else {
+      ballIntake2.set(0.0);
+    };
+
+    if(controlStick.getRawButton(3) == true) {
+      winch.set(ControlMode.PercentOutput, controlStick.getY());
+    } else {
+      winch.set(ControlMode.PercentOutput, 0.0);
+    };
+
+    if(controlStick.getRawButton(4) == true) {
+      ballShooter.set(controlStick.getY());
+    } else {
+      ballShooter.set(0.0);
+    };
+
+    if(controlStick.getRawButton(5) == true) {
+      ballTube1.set(ControlMode.PercentOutput, controlStick.getY());
+    } else {
+      ballTube1.set(ControlMode.PercentOutput, 0.0);
+    };
+
+    if(controlStick.getRawButton(6) == true) {
+      ballTube2.set(ControlMode.PercentOutput, controlStick.getY());
+    } else {
+      ballTube2.set(ControlMode.PercentOutput, 0.0);
+    };
+
+    if(controlStick.getRawButton(7) == true) {
+      ctrlPanel.set(ControlMode.PercentOutput, controlStick.getY());
+    } else {
+      ctrlPanel.set(ControlMode.PercentOutput, 0.0);
+    };
+
+    if(controlStick.getRawButton(8) == true) {
+      gondolla.set(ControlMode.PercentOutput, controlStick.getY());
+    } else {
+      gondolla.set(ControlMode.PercentOutput, 0.0);
+    };
+
+    if(controlStick.getRawButton(9) == true) {
+      ballStop.set(true);
+    } else {
+      ballStop.set(false);
+    };
+
+    if(controlStick.getRawButton(10) == true) {
+      climbBrake.set(true);
+    } else {
+      climbBrake.set(false);
+    };
+
+    if(controlStick.getRawButton(11) == true) {
+      gatherLift.set(true);
+    } else {
+      gatherLift.set(false);
+    };
+
+    if(controlStick.getRawButtonPressed(12) == true) {
+      shifter.set(!shifter.get());
+    }
+    
+    if(driveStick.getRawButton(12) == true) {
+      ctrlPanelLifter.set(true);
+    } else {
+      ctrlPanelLifter.set(false);
+    };
 
   }
 
