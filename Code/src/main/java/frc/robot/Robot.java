@@ -69,7 +69,7 @@ public class Robot extends TimedRobot {
   // SOLENOIDS
   private static final int kBallStop = 3;
   private static final int kShifter = 1;
-  private static final int kGatherLift = 0;
+  private static final int kGatherLift = 4;
   //private static final int kCtrlPanelLifter = 4;
   private static final int kClimbPneumatics = 2;
 
@@ -82,6 +82,15 @@ public class Robot extends TimedRobot {
   private static final String kRightAuto = "Right";
 
   private static DifferentialDrive m_robotDrive;
+
+  //AUTO CHOICE
+
+  private static final String kBackShoot = "Back Shoot";
+  private static final String kFrontShoot = "Front Shoot";
+  private static final String kAutoForward = "Drive Forward";
+  private static final String kAutoBackward = "Drive Backward";
+  private String m_autoSelected;
+  private final SendableChooser<String>m_chooser = new SendableChooser<>();
 
   // Input Devices
   private static Joystick driveStick;
@@ -137,6 +146,13 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+
+    // Auto Choice Init
+
+    m_chooser.setDefaultOption("Shoot (Back bumper on line)", kBackShoot);
+    m_chooser.addOption("Shoot (Front bumper on line)", kFrontShoot);
+    m_chooser.addOption("Just drive forwards a little", kAutoForward);
+    m_chooser.addOption("Just drive backwards a little", kAutoBackward);
 
     // Drivetrain Init
 
@@ -222,6 +238,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
+    m_autoSelected = m_chooser.getSelected();
+    System.out.println("Auto selected: " + m_autoSelected);
+
     timer.reset();
     timer.start();
     driveEncoder.equals(0);
@@ -233,18 +252,22 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     gatherLift.set(true);
-    if (driveEncoder.getPosition() <= 115 && timer.get() <= 4) {
-      m_robotDrive.arcadeDrive(-0.6, 0);
-    } else if (timer.get() > 4 && timer.get() < 14.5){
-      m_robotDrive.arcadeDrive(0, 0);
-      ballShooter.set(-0.8);
-      ballStop.set(true);
-        if (shooterEncoder.getVelocity() <= -4000) {
-          //ballIntake1.set(0.6);
-          ballIntake2.set(-0.6);
+    switch (m_autoSelected) {
 
-          ballTube1.set(ControlMode.PercentOutput, -0.45);
-          ballTube2.set(ControlMode.PercentOutput, -0.55);
+      case kBackShoot:
+      default:
+    if (driveEncoder.getPosition() <= 95 && timer.get() <= 3.25) {
+      m_robotDrive.arcadeDrive(-0.7, 0);
+    } else if (timer.get() > 3.25 && timer.get() < 9){
+      m_robotDrive.arcadeDrive(0, 0);
+      ballShooter.set(-0.76);
+      ballStop.set(true);
+        if (shooterEncoder.getVelocity() <= -4250) {
+          //ballIntake1.set(0.6);
+          ballIntake2.set(-0.45);
+
+          ballTube1.set(ControlMode.PercentOutput, -0.55);
+          ballTube2.set(ControlMode.PercentOutput, -0.65);
         } else {
           //ballIntake1.set(0);
           ballIntake2.set(0);
@@ -253,8 +276,8 @@ public class Robot extends TimedRobot {
           ballTube2.set(ControlMode.PercentOutput, 0);
          };
 
-    } else {
-      m_robotDrive.arcadeDrive(0, 0);
+    } else if (timer.get() >= 9 && timer.get() < 13) {
+      m_robotDrive.arcadeDrive(0.6, 0);
 
       //ballIntake1.set(0);
       ballIntake2.set(0);
@@ -263,8 +286,67 @@ public class Robot extends TimedRobot {
       ballTube2.set(ControlMode.PercentOutput, 0);
 
       ballShooter.set(0);
+    } else if (timer.get() >= 13 && timer.get() < 14) {
+      //m_robotDrive.arcadeDrive(0, 0.75);
+      ballIntake2.set(0);
+      ballTube1.set(ControlMode.PercentOutput, 0);
+      ballTube2.set(ControlMode.PercentOutput, 0);
+    } else {
+      m_robotDrive.arcadeDrive(0, 0);
     };
-    
+    break;
+    case kFrontShoot: 
+    if (driveEncoder.getPosition() <= 95 && timer.get() <= 3.25) {
+      m_robotDrive.arcadeDrive(-0.7, 0);
+    } else if (timer.get() > 3.25 && timer.get() < 9){
+      m_robotDrive.arcadeDrive(0, 0);
+      ballShooter.set(-0.76);
+      ballStop.set(true);
+        if (shooterEncoder.getVelocity() <= -4250) {
+          //ballIntake1.set(0.6);
+          ballIntake2.set(-0.45);
+
+          ballTube1.set(ControlMode.PercentOutput, -0.55);
+          ballTube2.set(ControlMode.PercentOutput, -0.65);
+        } else {
+          //ballIntake1.set(0);
+          ballIntake2.set(0);
+
+          ballTube1.set(ControlMode.PercentOutput, 0);
+          ballTube2.set(ControlMode.PercentOutput, 0);
+         };
+
+    } else if (timer.get() >= 9 && timer.get() < 13) {
+      m_robotDrive.arcadeDrive(0.6, 0);
+
+      //ballIntake1.set(0);
+      ballIntake2.set(0);
+
+      ballTube1.set(ControlMode.PercentOutput, 0);
+      ballTube2.set(ControlMode.PercentOutput, 0);
+
+      ballShooter.set(0);
+    } else if (timer.get() >= 13 && timer.get() < 14) {
+      //m_robotDrive.arcadeDrive(0, 0.75);
+      ballIntake2.set(0);
+      ballTube1.set(ControlMode.PercentOutput, 0);
+      ballTube2.set(ControlMode.PercentOutput, 0);
+    } else {
+      m_robotDrive.arcadeDrive(0, 0);
+    };
+    break;
+    case kAutoBackward:
+    if (timer.get() >= 13) {
+      m_robotDrive.arcadeDrive(0.4, 0);
+    };
+    break;
+    case kAutoForward:
+    if (timer.get() >= 13) {
+      m_robotDrive.arcadeDrive(-0.4, 0);
+    };
+    break;
+  }; //switch
+
   }
 
   @Override
@@ -288,7 +370,7 @@ public class Robot extends TimedRobot {
       //Turn on intake
       gatherLift.set(true);
       //ballIntake1.set(0.6);
-      ballIntake2.set(-0.6);
+      ballIntake2.set(-0.45);
 
       ballTube1.set(ControlMode.PercentOutput, -0.55);
       ballTube2.set(ControlMode.PercentOutput, -0.65);
@@ -306,31 +388,36 @@ public class Robot extends TimedRobot {
 
     if(controlStick.getRawButton(1) == true) {
       ballStop.set(true);
-      ballShooter.set(-0.77);
+      ballShooter.set(-0.75);
+      compressor.stop();
       SmartDashboard.putNumber("Shooter Speed (RPM): ", shooterEncoder.getVelocity());
 
 
-      if (shooterEncoder.getVelocity() <= -3600) {
+      if (shooterEncoder.getVelocity() <= -4250) {
         ballTube1.set(ControlMode.PercentOutput, -0.55);
         ballTube2.set(ControlMode.PercentOutput, -0.65);
+        ballIntake2.set(-0.35);
       } else {
         ballTube1.set(ControlMode.PercentOutput, 0.0);
         ballTube2.set(ControlMode.PercentOutput, 0.0);
+        ballIntake2.set(0.0);
       };
 
     } else {
       ballStop.set(false);
       ballShooter.set(0);
+      compressor.start();
     };
 
     if(controlStick.getRawButton(5) == true) {
-      winch.set(ControlMode.PercentOutput, controlStick.getY());
+      winch.set(ControlMode.PercentOutput, -1 * Math.abs(controlStick.getY()));
     } else {
       winch.set(ControlMode.PercentOutput, 0.0);
     }
 
-    if(controlStick.getRawButton(6) == true) {
-      gondolla.set(ControlMode.PercentOutput, controlStick.getY());
+    if(driveStick.getRawButton(6) == true) {
+      gondolla.set(ControlMode.PercentOutput, driveStick.getY());
+      m_robotDrive.arcadeDrive(0, 0);
     } else {
       gondolla.set(ControlMode.PercentOutput, 0.0);
     };
@@ -351,13 +438,11 @@ public class Robot extends TimedRobot {
       gatherLift.set(!gatherLift.get());
     };
 
-    /*if(controlStick.getRawButton(12) == true) {
-      ctrlPanel.set(ControlMode.PercentOutput, controlStick.getY());
-    } else {
-      ctrlPanel.set(ControlMode.PercentOutput, 0.0);
+    if(controlStick.getRawButtonPressed(12) == true) {
+      ballIntake2.set(0.5);
     };
 
-    if(driveStick.getRawButtonPressed(12) == true) {
+    /*if(driveStick.getRawButtonPressed(12) == true) {
       ctrlPanelLifter.set(!ctrlPanelLifter.get());
     };*/
 
